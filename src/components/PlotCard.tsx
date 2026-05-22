@@ -729,7 +729,9 @@ export default function PlotCard({
                           {isRes ? (
                             `परिवार संख्या: ${record["परिवार क्रमांक"] || "N/A"} • सदस्य: ${record["परिवार में रहने वालों की कुल संख्या"] || 0}`
                           ) : (
-                            `परिवार संख्या: N/A • सदस्य: N/A`
+                            record["गैर आवासीय मकान का नाम"] 
+                              ? `🏡 प्रतिष्ठान/मकान का नाम: ${record["गैर आवासीय मकान का नाम"]}` 
+                              : `परिवार संख्या: N/A • सदस्य: N/A`
                           )}
                         </span>
                       </div>
@@ -844,6 +846,14 @@ export default function PlotCard({
                               {record["जनगणना मकान का उपयोग"] || "N/A"}
                             </span>
                           </div>
+                          {!isRes && record["गैर आवासीय मकान का नाम"] && (
+                            <div className="flex flex-col gap-0.5 animate-fadeIn">
+                              <span className="text-amber-700 text-[10px] font-bold">गैर आवासीय मकान का नाम:</span>
+                              <span className="font-bold text-amber-950 bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded text-[11px] truncate block" title={record["गैर आवासीय मकान का नाम"]}>
+                                {record["गैर आवासीय मकान का नाम"]}
+                              </span>
+                            </div>
+                          )}
                           <div className="flex flex-col gap-0.5">
                             <span className="text-slate-400 text-[10px]">स्वामित्व की स्थिति:</span>
                             <span className="font-semibold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded text-[11px] truncate text-wrap block leading-relaxed">
