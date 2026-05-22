@@ -93,10 +93,18 @@ export default function PlotCard({
     setIsSaving(true);
     try {
       const isEditFormResidential = editFormData["जनगणना मकान का उपयोग"] === "आवास" || editFormData["जनगणना मकान का उपयोग"] === "आवास-सह-अन्य उपयोग";
+      
+      if (!isEditFormResidential && !String(editFormData["गैर आवासीय मकान का नाम"] || "").trim()) {
+        alert("कृपया गैर आवासीय मकान का नाम दर्ज करें।");
+        setIsSaving(false);
+        return;
+      }
+
       const cleanedData: CensusRecord = {
         ...editFormData,
         "भवन नंबर": String(editFormData["भवन नंबर"] || "").trim().toUpperCase(),
         "जनगणना मकान नंबर": String(editFormData["जनगणना मकान नंबर"] || "").trim().toUpperCase(),
+        "गैर आवासीय मकान का नाम": !isEditFormResidential ? String(editFormData["गैर आवासीय मकान का नाम"] || "").trim() : "",
         "परिवार क्रमांक": isEditFormResidential ? (String(editFormData["परिवार क्रमांक"] || "").trim().toUpperCase() || "F001") : "",
         "परिवार के मुखिया का नाम": String(editFormData["परिवार के मुखिया का नाम"] || "").trim(),
         "मोबाइल नंबर": String(editFormData["मोबाइल नंबर"] || "").trim(),
@@ -342,6 +350,22 @@ export default function PlotCard({
                         ))}
                       </select>
                     </div>
+
+                    {!isEditFormResidential && (
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          गैर आवासीय मकान का नाम <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={editFormData["गैर आवासीय मकान का नाम"] || ""}
+                          onChange={(e) => handleFieldChange("गैर आवासीय मकान का नाम", e.target.value)}
+                          placeholder="उदा. शर्मा जनरल स्टोर / एसबीआई एटीएम / पंचायत भवन"
+                          className="w-full px-3 py-2 text-sm bg-white border border-slate-205 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-550 text-slate-900 font-semibold"
+                        />
+                      </div>
+                    )}
 
                      {isEditFormResidential ? (
                       <>
@@ -1009,9 +1033,14 @@ export default function PlotCard({
                                         return (
                                           <div key={r["लाइन क्रमांक"]} className="bg-rose-50/90 text-rose-850 border border-rose-250/50 px-2.5 py-0.5 rounded font-sans text-[10px] font-bold flex flex-wrap items-center gap-1.5 shadow-sm">
                                             <span className="text-[11px]">💼</span>
-                                            <span className="bg-rose-100 text-rose-800 px-1 py-0.2 rounded font-sans text-[9px] font-extrabold uppercase">
+                                            <span className="bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded font-sans text-[9px] font-extrabold uppercase">
                                               {r["जनगणना मकान का उपयोग"] || "गैर-आवासीय"}
                                             </span>
+                                            {r["गैर आवासीय मकान का नाम"] && (
+                                              <span className="bg-amber-100/90 text-amber-950 px-1.5 py-0.5 rounded font-sans text-[9px] font-black border border-amber-300">
+                                                {r["गैर आवासीय मकान का नाम"]}
+                                              </span>
+                                            )}
                                             {r["परिवार के मुखिया का नाम"] && (
                                               <div className="flex items-center gap-1 text-[9px] font-sans font-bold">
                                                 <span className="text-slate-400">संचालक:</span>

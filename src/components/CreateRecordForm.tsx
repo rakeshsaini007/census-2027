@@ -68,6 +68,7 @@ export default function CreateRecordForm({
   const [houseDecision, setHouseDecision] = useState<"existing" | "new" | "">("");
   const [houseNo, setHouseNo] = useState("");
   const [houseUse, setHouseUse] = useState(HOUSE_USE_OPTIONS[0]); // default is "आवास"
+  const [nonResName, setNonResName] = useState("");
   const [familyNo, setFamilyNo] = useState("");
 
   // Family details state (only active if residential)
@@ -254,7 +255,11 @@ export default function CreateRecordForm({
         return;
       }
     } else {
-      // Non-Residential: only headName, mobile, gender, caste, ownership are visible and required
+      // Non-Residential: only nonResName, headName, mobile, gender, caste, ownership are visible and required
+      if (!nonResName.trim()) {
+        alert("कृपया गैर आवासीय मकान का नाम दर्ज करें।");
+        return;
+      }
       if (!headName.trim()) {
         alert("कृपया मुखिया/संपर्क व्यक्ति का नाम दर्ज करें।");
         return;
@@ -285,6 +290,7 @@ export default function CreateRecordForm({
         "भवन नंबर": buildingNo.trim().toUpperCase(),
         "जनगणना मकान नंबर": houseNo.trim().toUpperCase(),
         "जनगणना मकान का उपयोग": houseUse,
+        "गैर आवासीय मकान का नाम": !isResidential ? nonResName.trim() : "",
         "परिवार क्रमांक": isResidential ? (familyNo.trim().toUpperCase() || "F001") : "",
         "परिवार के मुखिया का नाम": headName.trim(),
         "मोबाइल नंबर": mobile.trim(),
@@ -709,6 +715,24 @@ export default function CreateRecordForm({
                 <span>चयनित मकान उपयोग: <strong className="text-slate-900">{houseUse}</strong></span>
                 <span className="text-blue-600 font-bold">{isResidential ? "💡 परिवार फॉर्म सक्रिय होगा" : "⚠️ परिवार विवरण छोड़ा जाएगा"}</span>
               </div>
+
+              {!isResidential && (
+                <div className="bg-amber-50/70 border border-amber-200/60 rounded-2xl p-4.5 space-y-2 animate-fadeIn" id="non-residential-house-name-wrapper">
+                  <label className="block text-xs font-bold text-slate-700">
+                    गैर आवासीय मकान का नाम <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={nonResName}
+                    onChange={(e) => setNonResName(e.target.value)}
+                    placeholder="उदा. शर्मा जनरल स्टोर / एसबीआई बैंक / गुप्ता निवास कोचिंग सेंटर"
+                    className="w-full px-4 py-2.5 text-sm bg-white border border-slate-205 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-450 rounded-xl"
+                    id="non-residential-house-name-input"
+                  />
+                  <p className="text-[10px] text-amber-800 font-medium">कृपया गैर-आवासीय भवन/मकान का नाम (उदाहरणतः दुकान/संस्था/कार्यालय) का नाम प्रविष्ट करें।</p>
+                </div>
+              )}
             </div>
           )}
 

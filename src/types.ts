@@ -4,6 +4,7 @@ export interface CensusRecord {
   "भवन नंबर": string;
   "जनगणना मकान नंबर": string;
   "जनगणना मकान का उपयोग": string;
+  "गैर आवासीय मकान का नाम"?: string;
   "परिवार क्रमांक": string;
   "परिवार के मुखिया का नाम": string;
   "मोबाइल नंबर": string;
