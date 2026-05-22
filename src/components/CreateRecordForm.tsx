@@ -67,6 +67,7 @@ export default function CreateRecordForm({
   
   const [houseDecision, setHouseDecision] = useState<"existing" | "new" | "">("");
   const [houseNo, setHouseNo] = useState("");
+  const [houseStatus, setHouseStatus] = useState<"Unlocked" | "Locked">("Unlocked");
   const [houseUse, setHouseUse] = useState(HOUSE_USE_OPTIONS[0]); // default is "आवास"
   const [nonResName, setNonResName] = useState("");
   const [familyNo, setFamilyNo] = useState("");
@@ -220,11 +221,21 @@ export default function CreateRecordForm({
       }
       setStep(4);
     } else if (step === 4) {
+      if (!houseStatus) {
+        alert("कृपया मकान की स्थिति चुनें।");
+        return;
+      }
+      if (houseStatus === "Locked") {
+        alert("यह मकान ताला बंद (Locked) श्रेणी में है, इसलिए इसे यहीं से तुरंत नीचे 'बंद मकान सुरक्षित करें' बटन पर क्लिक करके सहेजा जाना चाहिए।");
+        return;
+      }
+      setStep(5);
+    } else if (step === 5) {
       if (!houseUse) {
         alert("कृपया मकान का उपयोग चयन करें।");
         return;
       }
-      setStep(5);
+      setStep(6);
     }
   };
 
@@ -241,7 +252,11 @@ export default function CreateRecordForm({
       return;
     }
 
-    if (isResidential) {
+    const isLocked = houseStatus === "Locked";
+
+    if (isLocked) {
+      // Locked house: stop and bypass validations
+    } else if (isResidential) {
       if (!familyNo.trim()) {
         alert("कृपया परिवार क्रमांक दर्ज करें।");
         return;
@@ -289,23 +304,24 @@ export default function CreateRecordForm({
         "प्लॉट क्रमांक": plotNo.trim(),
         "भवन नंबर": buildingNo.trim().toUpperCase(),
         "जनगणना मकान नंबर": houseNo.trim().toUpperCase(),
-        "जनगणना मकान का उपयोग": houseUse,
-        "गैर आवासीय मकान का नाम": !isResidential ? nonResName.trim() : "",
-        "परिवार क्रमांक": isResidential ? (familyNo.trim().toUpperCase() || "F001") : "",
-        "परिवार के मुखिया का नाम": headName.trim(),
-        "मोबाइल नंबर": mobile.trim(),
-        "लिंग": gender,
-        "SC/ST/अन्य": caste,
-        "मकान के स्वामित्व की स्थिति": ownership,
-        "परिवार के पास रहने के लिए उपलब्ध कमरों की संख्या": isResidential ? (Number(roomsCount) || 0) : "",
-        "परिवार में रहने वालों की कुल संख्या": isResidential ? (Number(membersCount) || 0) : "",
-        "विवाहित जोड़ों की संख्या": isResidential ? (Number(marriedCouples) || 0) : "",
-        "पेयजल का मुख्य स्रोत": isResidential ? waterSource : "",
-        "पेयजल स्रोत की उपलब्धता": isResidential ? waterAvailability : "",
-        "LPG/PNG": isResidential ? lpg : "",
-        "LAPTOP/ COMPUTER": isResidential ? laptop : "",
-        "साइकिल/ स्कूटर": isResidential ? vehicle : "",
-        "कार/ जीप/ वैन": isResidential ? car : ""
+        "जनगणना मकान का उपयोग": isLocked ? "खाली" : houseUse,
+        "गैर आवासीय मकान का नाम": !isResidential && !isLocked ? nonResName.trim() : "",
+        "परिवार क्रमांक": isResidential && !isLocked ? (familyNo.trim().toUpperCase() || "F001") : "",
+        "परिवार के मुखिया का नाम": isLocked ? "LOCKED" : headName.trim(),
+        "मोबाइल नंबर": isLocked ? "" : mobile.trim(),
+        "लिंग": isLocked ? "" : gender,
+        "SC/ST/अन्य": isLocked ? "" : caste,
+        "मकान के स्वामित्व की स्थिति": isLocked ? "" : ownership,
+        "परिवार के पास रहने के लिए उपलब्ध कमरों की संख्या": isResidential && !isLocked ? (Number(roomsCount) || 0) : "",
+        "परिवार में रहने वालों की कुल संख्या": isResidential && !isLocked ? (Number(membersCount) || 0) : "",
+        "विवाहित जोड़ों की संख्या": isResidential && !isLocked ? (Number(marriedCouples) || 0) : "",
+        "पेयजल का मुख्य स्रोत": isResidential && !isLocked ? waterSource : "",
+        "पेयजल स्रोत की उपलब्धता": isResidential && !isLocked ? waterAvailability : "",
+        "LPG/PNG": isResidential && !isLocked ? lpg : "",
+        "LAPTOP/ COMPUTER": isResidential && !isLocked ? laptop : "",
+        "साइकिल/ स्कूटर": isResidential && !isLocked ? vehicle : "",
+        "कार/ जीप/ वैन": isResidential && !isLocked ? car : "",
+        "मकान की स्थिति": isLocked ? "Locked" : "Unlocked"
       };
 
       const success = await onSave(recordToSave);
@@ -346,13 +362,14 @@ export default function CreateRecordForm({
 
         {/* Step Indicator Board */}
         <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100 shrink-0">
-          <div className="flex items-center justify-between max-w-md mx-auto">
+          <div className="flex items-center justify-between max-w-lg mx-auto">
             {[
               { idx: 1, label: "प्लॉट" },
               { idx: 2, label: "भवन" },
               { idx: 3, label: "मकान" },
-              { idx: 4, label: "उपयोग" },
-              { idx: 5, label: "विवरण/पुष्टि" }
+              { idx: 4, label: "मकान की स्थिति" },
+              { idx: 5, label: "उपयोग" },
+              { idx: 6, label: "विवरण/पुष्टि" }
             ].map(s => {
               const isActive = step === s.idx;
               const isCompleted = step > s.idx;
@@ -368,13 +385,13 @@ export default function CreateRecordForm({
                     }`}>
                       {isCompleted ? <Check className="h-4.5 w-4.5" /> : s.idx}
                     </div>
-                    <span className={`text-[10px] font-bold ${
+                    <span className={`text-[10px] font-bold whitespace-nowrap ${
                       isActive ? "text-blue-600 font-extrabold" : isCompleted ? "text-emerald-600" : "text-slate-400"
                     }`}>
                       {s.label}
                     </span>
                   </div>
-                  {s.idx < 5 && (
+                  {s.idx < 6 && (
                     <div className="flex-1 h-0.5 mx-2 bg-slate-200 relative">
                       <div className="absolute inset-0 bg-emerald-500 transition-all duration-500" style={{ width: isCompleted ? "100%" : "0%" }} />
                     </div>
@@ -607,7 +624,7 @@ export default function CreateRecordForm({
                   }`}
                 >
                   <div className="flex justify-between items-center">
-                    <Sparkles className={`h-6 w-6 ${houseDecision === "new" ? "text-blue-600" : "text-amber-505"}`} />
+                    <Sparkles className={`h-6 w-6 ${houseDecision === "new" ? "text-blue-600" : "text-amber-500"}`} />
                     {houseDecision === "new" && <div className="h-4 w-4 rounded-full bg-blue-600" />}
                   </div>
                   <div>
@@ -662,13 +679,106 @@ export default function CreateRecordForm({
             </div>
           )}
 
-          {/* STEP 4: SELECT USAGE */}
+          {/* STEP 4: HOUSE STATUS (LOCKED / UNLOCKED) */}
           {step === 4 && (
             <div className="space-y-4 animate-fadeIn" id="wizard-step-4">
               <div className="border border-blue-50 bg-blue-50/30 rounded-2xl p-4 flex gap-3 text-xs text-blue-800">
                 <Info className="h-5 w-5 text-blue-600 shrink-0" />
                 <div className="space-y-1">
-                  <strong className="block font-bold">चरण ४: जनगणना मकान का उपयोग (House Property Usage)</strong>
+                  <strong className="block font-bold">चरण ४: मकान की स्थिति का निर्णय (House Status Decision)</strong>
+                  <p className="leading-relaxed">यदि गृहस्वामी अनुपस्थित है या ताला बंद है तो <strong>Locked</strong> चुनें। नियमानुसार बंद मकानों की आगे की प्रविष्टि को रोककर तुरंत सहेजा जाएगा। यदि मकान खुला है तो <strong>Unlocked</strong> चुनकर नियमित जनगणना जारी रखें।</p>
+                </div>
+              </div>
+
+              {/* Decision Cards for House Status */}
+              <div className="bg-white border border-slate-150 rounded-2xl p-5 space-y-4 shadow-sm">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  मकान की स्थिति (House Status) <span className="text-red-500">*</span>
+                </label>
+                
+                <p className="text-[11px] text-slate-500 leading-snug">
+                  यदि गृहस्वामी अनुपस्थित है या ताला बंद है तो **Locked** चुनें। नियमानुसार बंद मकानों की आगे की प्रविष्टि को रोककर तुरंत सहेजा जाएगा।
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  
+                  {/* Option Unlocked */}
+                  <div 
+                    onClick={() => setHouseStatus("Unlocked")}
+                    className={`border-2 rounded-2xl p-5 cursor-pointer flex flex-col gap-3 transition-all ${
+                      houseStatus === "Unlocked"
+                        ? "border-emerald-600 bg-emerald-50/20 shadow-md"
+                        : "border-slate-200 bg-white hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <CheckCircle2 className={`h-6 w-6 ${houseStatus === "Unlocked" ? "text-emerald-600" : "text-slate-400"}`} />
+                      {houseStatus === "Unlocked" && <div className="h-4 w-4 rounded-full bg-emerald-600" />}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-800">🔍 Unlocked (खुला हुआ)</h4>
+                      <p className="text-[11px] text-slate-500 mt-1">घर खुला है और निवासी उपलब्ध हैं। नियमित जनगणना विवरण प्रविष्ट करने के लिए आगे बढ़ें।</p>
+                    </div>
+                  </div>
+
+                  {/* Option Locked */}
+                  <div 
+                    onClick={() => setHouseStatus("Locked")}
+                    className={`border-2 rounded-2xl p-5 cursor-pointer flex flex-col gap-3 transition-all ${
+                      houseStatus === "Locked"
+                        ? "border-rose-600 bg-rose-50/20 shadow-md"
+                        : "border-slate-200 bg-white hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <AlertTriangle className={`h-6 w-6 ${houseStatus === "Locked" ? "text-rose-605" : "text-slate-400"}`} />
+                      {houseStatus === "Locked" && <div className="h-4 w-4 rounded-full bg-rose-600" />}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-800">🔒 Locked (ताला बंद)</h4>
+                      <p className="text-[11px] text-slate-500 mt-1">मकान बंद है या गृहस्वामी अनुपस्थित है। नियम ४ के अंतर्गत इसे तुरंत सहेजा जाएगा।</p>
+                    </div>
+                  </div>
+
+                </div>
+
+                {houseStatus === "Locked" && (
+                  <div className="p-4 bg-rose-50 border border-rose-200/60 rounded-xl space-y-3 animate-fadeIn" id="inner-locked-save-container">
+                    <p className="text-[11px] text-rose-800 font-bold flex items-center gap-1.5">
+                      <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
+                      <span>Locked (ताला बंद) मकान - आगे की प्रविष्टियां बाईपास होंगी।</span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={isSubmitting}
+                      className="w-full px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-md shadow-rose-600/15 smooth-hover"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white/60 border-t-white rounded-full animate-spin shrink-0"></div>
+                          <span>लाइव शीट में बंद मकान सुरक्षित किया जा रहा है...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4" />
+                          <span>बंद मकान सुरक्षित करें (Save Locked House)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* STEP 5: SELECT USAGE */}
+          {step === 5 && (
+            <div className="space-y-4 animate-fadeIn" id="wizard-step-5">
+              <div className="border border-blue-50 bg-blue-50/30 rounded-2xl p-4 flex gap-3 text-xs text-blue-800">
+                <Info className="h-5 w-5 text-blue-600 shrink-0" />
+                <div className="space-y-1">
+                  <strong className="block font-bold">चरण ५: जनगणना मकान का उपयोग (House Property Usage)</strong>
                   <p className="leading-relaxed">इस मकान का वर्तमान में उपयोग किस श्रेणी में किया जा रहा है? यदि उपयोग 'आवास' या 'आवास-सह-अन्य उपयोग' है तो परिवार प्रविष्टि व विवरण प्रखण्ड सक्रिय होगा, अन्यथा स्वतः बाईपास होगा।</p>
                 </div>
               </div>
@@ -736,9 +846,9 @@ export default function CreateRecordForm({
             </div>
           )}
 
-          {/* STEP 5: HOUSEHOLD DETAILS / SAVE ACTION */}
-          {step === 5 && (
-            <div className="space-y-5 animate-fadeIn" id="wizard-step-5">
+          {/* STEP 6: HOUSEHOLD DETAILS / SAVE ACTION */}
+          {step === 6 && (
+            <div className="space-y-5 animate-fadeIn" id="wizard-step-6">
               
               {isResidential ? (
                 /* Residential Household Complex form flow */
@@ -1062,7 +1172,26 @@ export default function CreateRecordForm({
               रद्द करें
             </button>
 
-            {step < 5 ? (
+            {step === 4 && houseStatus === "Locked" ? (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="cursor-pointer px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md shadow-emerald-500/15 smooth-hover font-bold"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-3 w-3 border-2 border-white/60 border-t-white rounded-full animate-spin shrink-0"></div>
+                    <span>लाइव शीट में सहेजा जा रहा है...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    <span>बंद मकान सुरक्षित करें (Save Locked House)</span>
+                  </>
+                )}
+              </button>
+            ) : step < 6 ? (
               <button
                 type="button"
                 onClick={handleNextStep}

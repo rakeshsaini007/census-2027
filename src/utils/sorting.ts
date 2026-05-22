@@ -20,10 +20,20 @@ export const naturalCompare = (a: string | number, b: string | number): number =
  */
 export const sortCensusRecords = (records: CensusRecord[]): CensusRecord[] => {
   return [...records].sort((a, b) => {
+    const hA = String(a["जनगणना मकान नंबर"] || "").trim().toUpperCase();
+    const hB = String(b["जनगणना मकान नंबर"] || "").trim().toUpperCase();
+
+    // If house number is empty, push to bottom
+    if (hA !== "" && hB === "") return -1;
+    if (hA === "" && hB !== "") return 1;
+    if (hA !== hB) {
+      return naturalCompare(hA, hB);
+    }
+
     const fA = String(a["परिवार क्रमांक"] || "").trim().toUpperCase();
     const fB = String(b["परिवार क्रमांक"] || "").trim().toUpperCase();
 
-    // If one is empty, push to bottom
+    // If family is empty, push to bottom
     if (fA !== "" && fB === "") return -1;
     if (fA === "" && fB !== "") return 1;
     if (fA === "" && fB === "") {
@@ -31,20 +41,7 @@ export const sortCensusRecords = (records: CensusRecord[]): CensusRecord[] => {
       return Number(a["लाइन क्रमांक"] || 0) - Number(b["लाइन क्रमांक"] || 0);
     }
 
-    // Ignore 'F' prefix and extract digits
-    let codeA = fA.indexOf("F") === 0 ? fA.substring(1).trim() : fA;
-    let codeB = fB.indexOf("F") === 0 ? fB.substring(1).trim() : fB;
-
-    let numA = parseInt(codeA, 10);
-    let numB = parseInt(codeB, 10);
-
-    if (!isNaN(numA) && !isNaN(numB)) {
-      return numA - numB;
-    }
-    return fA.localeCompare(fB, undefined, {
-      numeric: true,
-      sensitivity: "base",
-    });
+    return naturalCompare(fA, fB);
   });
 };
 

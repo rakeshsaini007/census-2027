@@ -20,6 +20,7 @@ export interface CensusRecord {
   "LAPTOP/ COMPUTER": string;
   "साइकिल/ स्कूटर": string;
   "कार/ जीप/ वैन": string;
+  "मकान की स्थिति"?: string;
 }
 
 export const HOUSE_USE_OPTIONS = [

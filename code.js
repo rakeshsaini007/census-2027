@@ -187,7 +187,7 @@ function doPost(e) {
 
 /**
  * Automatically sorts and re-indexes the sheet on the Google Sheets server side.
- * Keeps data grouped by: Plot No -> Building No -> House No -> Family No.
+ * Keeps data grouped by: House No -> Family No.
  * Re-numbers the 'लाइन क्रमांक' column dynamically based on the final sorted sequence.
  */
 function sortAndReindexSheet(sheet) {
@@ -197,40 +197,61 @@ function sortAndReindexSheet(sheet) {
   
   const headers = values[0];
   const rows = values.slice(1);
+  
+  const houseColIndex = headers.indexOf("जनगणना मकान नंबर");
   const famColIndex = headers.indexOf("परिवार क्रमांक");
   
-  if (famColIndex === -1) return;
+  if (houseColIndex === -1 && famColIndex === -1) return;
   
-  // Natural comparative sorting helper for Apps Script
-  function naturalCompare(a, b) {
-    const strA = String(a).trim();
-    const strB = String(b).trim();
-    return strA.localeCompare(strB, undefined, { numeric: true, sensitivity: 'base' });
+  // Custom natural comparative sorting helper that works bulletproof in Google Apps Script
+  function naturalCompare(as, bs) {
+    var a = String(as).toUpperCase().trim();
+    var b = String(bs).toUpperCase().trim();
+    var re = /(\d+)|(\D+)/g;
+    var aParts = a.match(re) || [];
+    var bParts = b.match(re) || [];
+    var l = Math.min(aParts.length, bParts.length);
+    for (var i = 0; i < l; i++) {
+      var aPart = aParts[i];
+      var bPart = bParts[i];
+      var aNum = parseInt(aPart, 10);
+      var bNum = parseInt(bPart, 10);
+      var isANum = !isNaN(aNum);
+      var isBNum = !isNaN(bNum);
+      if (isANum && isBNum) {
+        if (aNum !== bNum) return aNum - bNum;
+      } else {
+        if (aPart !== bPart) return aPart < bPart ? -1 : 1;
+      }
+    }
+    return aParts.length - bParts.length;
   }
   
   rows.sort(function(rowA, rowB) {
-    const fA = String(rowA[famColIndex]).trim().toUpperCase();
-    const fB = String(rowB[famColIndex]).trim().toUpperCase();
+    const hA = houseColIndex !== -1 ? String(rowA[houseColIndex]).trim().toUpperCase() : "";
+    const hB = houseColIndex !== -1 ? String(rowB[houseColIndex]).trim().toUpperCase() : "";
     
-    // If one is empty, push to bottom
-    if (fA !== "" && fB === "") return -1;
-    if (fA === "" && fB !== "") return 1;
-    if (fA === "" && fB === "") {
-      // Sort by line sequence if both are empty
-      return Number(rowA[0]) - Number(rowB[0]);
+    // If one house number is empty, push to bottom
+    if (hA !== "" && hB === "") return -1;
+    if (hA === "" && hB !== "") return 1;
+    if (hA !== hB) {
+      return naturalCompare(hA, hB);
     }
     
-    // Ignore 'F' prefix and extract digits
-    let codeA = fA.indexOf("F") === 0 ? fA.substring(1).trim() : fA;
-    let codeB = fB.indexOf("F") === 0 ? fB.substring(1).trim() : fB;
-    
-    let numA = parseInt(codeA, 10);
-    let numB = parseInt(codeB, 10);
-    
-    if (!isNaN(numA) && !isNaN(numB)) {
-      return numA - numB;
+    // If house numbers are identical, sort by family number
+    if (famColIndex !== -1) {
+      const fA = String(rowA[famColIndex]).trim().toUpperCase();
+      const fB = String(rowB[famColIndex]).trim().toUpperCase();
+      
+      if (fA !== "" && fB === "") return -1;
+      if (fA === "" && fB !== "") return 1;
+      if (fA !== fB) {
+        return naturalCompare(fA, fB);
+      }
     }
-    return fA.localeCompare(fB, undefined, { numeric: true, sensitivity: 'base' });
+    
+    // Default fallback to line sequence
+    return Number(rowA[0]) - Number(rowB[0]);
   });
   
   // Recompute 'लाइन क्रमांक' to be purely 1-based sequential
@@ -240,6 +261,30 @@ function sortAndReindexSheet(sheet) {
   
   // Write the sorted and re-indexed rows back structure-intact
   sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+}
+
+/**
+ * Creates a custom helper menu inside the Google Sheets interface
+ * so the user can easily trigger a sort and re-index of their sheet in 1 click.
+ */
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  ui.createMenu("📋 जनगणना टूल्स")
+    .addItem("🔄 रिकॉर्ड्स क्रमानुसार सॉर्ट करें (Sort Records)", "manualSortAndReindex")
+    .addToUi();
+}
+
+/**
+ * Function called from the Google Sheets custom menu
+ */
+function manualSortAndReindex() {
+  try {
+    const sheet = getSheet();
+    sortAndReindexSheet(sheet);
+    SpreadsheetApp.getUi().alert("सफलता: सभी रिकॉर्ड्स सफलतापूर्वक जनगणना मकान संख्या के आधार पर क्रमानुसार सॉर्ट और पुन: व्यवस्थित कर दिए गए हैं!");
+  } catch (error) {
+    SpreadsheetApp.getUi().alert("त्रुटि: " + error.toString());
+  }
 }
 
 function createJsonResponse(obj) {

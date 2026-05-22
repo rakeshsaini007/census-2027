@@ -92,9 +92,10 @@ export default function PlotCard({
     
     setIsSaving(true);
     try {
-      const isEditFormResidential = editFormData["जनगणना मकान का उपयोग"] === "आवास" || editFormData["जनगणना मकान का उपयोग"] === "आवास-सह-अन्य उपयोग";
+      const isRecordLocked = editFormData["परिवार के मुखिया का नाम"] === "LOCKED" || editFormData["मकान की स्थिति"] === "Locked";
+      const isEditFormResidential = !isRecordLocked && (editFormData["जनगणना मकान का उपयोग"] === "आवास" || editFormData["जनगणना मकान का उपयोग"] === "आवास-सह-अन्य उपयोग");
       
-      if (!isEditFormResidential && !String(editFormData["गैर आवासीय मकान का नाम"] || "").trim()) {
+      if (!isEditFormResidential && !isRecordLocked && !String(editFormData["गैर आवासीय मकान का नाम"] || "").trim()) {
         alert("कृपया गैर आवासीय मकान का नाम दर्ज करें।");
         setIsSaving(false);
         return;
@@ -104,13 +105,13 @@ export default function PlotCard({
         ...editFormData,
         "भवन नंबर": String(editFormData["भवन नंबर"] || "").trim().toUpperCase(),
         "जनगणना मकान नंबर": String(editFormData["जनगणना मकान नंबर"] || "").trim().toUpperCase(),
-        "गैर आवासीय मकान का नाम": !isEditFormResidential ? String(editFormData["गैर आवासीय मकान का नाम"] || "").trim() : "",
+        "गैर आवासीय मकान का नाम": !isEditFormResidential && !isRecordLocked ? String(editFormData["गैर आवासीय मकान का नाम"] || "").trim() : "",
         "परिवार क्रमांक": isEditFormResidential ? (String(editFormData["परिवार क्रमांक"] || "").trim().toUpperCase() || "F001") : "",
-        "परिवार के मुखिया का नाम": String(editFormData["परिवार के मुखिया का नाम"] || "").trim(),
-        "मोबाइल नंबर": String(editFormData["मोबाइल नंबर"] || "").trim(),
-        "लिंग": editFormData["लिंग"] || "",
-        "SC/ST/अन्य": editFormData["SC/ST/अन्य"] || "",
-        "मकान के स्वामित्व की स्थिति": editFormData["मकान के स्वामित्व की स्थिति"] || "",
+        "परिवार के मुखिया का नाम": isRecordLocked ? "LOCKED" : String(editFormData["परिवार के मुखिया का नाम"] || "").trim(),
+        "मोबाइल नंबर": isRecordLocked ? "" : String(editFormData["मोबाइल नंबर"] || "").trim(),
+        "लिंग": isRecordLocked ? "" : (editFormData["लिंग"] || ""),
+        "SC/ST/अन्य": isRecordLocked ? "" : (editFormData["SC/ST/अन्य"] || ""),
+        "मकान के स्वामित्व की स्थिति": isRecordLocked ? "" : (editFormData["मकान के स्वामित्व की स्थिति"] || ""),
         "परिवार के पास रहने के लिए उपलब्ध कमरों की संख्या": isEditFormResidential ? editFormData["परिवार के पास रहने के लिए उपलब्ध कमरों की संख्या"] : "",
         "परिवार में रहने वालों की कुल संख्या": isEditFormResidential ? editFormData["परिवार में रहने वालों की कुल संख्या"] : "",
         "विवाहित जोड़ों की संख्या": isEditFormResidential ? editFormData["विवाहित जोड़ों की संख्या"] : "",
@@ -119,7 +120,8 @@ export default function PlotCard({
         "LPG/PNG": isEditFormResidential ? editFormData["LPG/PNG"] : "",
         "LAPTOP/ COMPUTER": isEditFormResidential ? editFormData["LAPTOP/ COMPUTER"] : "",
         "साइकिल/ स्कूटर": isEditFormResidential ? editFormData["साइकिल/ स्कूटर"] : "",
-        "कार/ जीप/ वैन": isEditFormResidential ? editFormData["कार/ जीप/ वैन"] : ""
+        "कार/ जीप/ वैन": isEditFormResidential ? editFormData["कार/ जीप/ वैन"] : "",
+        "मकान की स्थिति": isRecordLocked ? "Locked" : String(editFormData["मकान की स्थिति"] || "Unlocked")
       };
 
       const success = await onSaveRecord(cleanedData);
@@ -718,11 +720,19 @@ export default function PlotCard({
                       </div>
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-slate-800">
-                          {record["परिवार के मुखिया का नाम"] || "अघोषित मुखिया"}
-                          {!isRes && (
-                            <span className="ml-1.5 text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-bold">
-                              गैर-आवासीय संपर्क
+                          {record["परिवार के मुखिया का नाम"] === "LOCKED" ? (
+                            <span className="inline-flex items-center gap-1.5 text-red-650 bg-red-50 border border-red-200/50 px-2 py-0.5 rounded text-xs leading-none font-sans font-black">
+                              🔒 मकान ताला बंद (LOCKED)
                             </span>
+                          ) : (
+                            <>
+                              {record["परिवार के मुखिया का नाम"] || "अघोषित मुखिया"}
+                              {!isRes && (
+                                <span className="ml-1.5 text-[10px] bg-amber-100 text-amber-805 px-1.5 py-0.2 rounded font-bold">
+                                  गैर-आवासीय संपर्क
+                                </span>
+                              )}
+                            </>
                           )}
                         </span>
                         <span className="text-xs text-slate-500 font-medium font-sans">
@@ -801,7 +811,13 @@ export default function PlotCard({
                         <div className="space-y-1.5 text-xs text-slate-600">
                           <div className="flex justify-between">
                             <span>मुखिया नाम:</span>
-                            <span className="font-semibold text-slate-800">{record["परिवार के मुखिया का नाम"] || "N/A"}</span>
+                            <span className="font-semibold text-slate-800">
+                              {record["परिवार के मुखिया का नाम"] === "LOCKED" ? (
+                                <span className="text-red-650 font-bold">🔒 LOCKED (ताला बंद)</span>
+                              ) : (
+                                record["परिवार के मुखिया का नाम"] || "N/A"
+                              )}
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span>लिंग:</span>
@@ -1017,12 +1033,22 @@ export default function PlotCard({
                                       {displayRecords.map(r => {
                                         const rIsRes = checkIsResidential(r["जनगणना मकान का उपयोग"] || "");
                                         const rIsBlank = isBlankRecord(r);
+                                        const rIsLocked = r["परिवार के मुखिया का नाम"] === "LOCKED" || r["मकान की स्थिति"] === "Locked";
 
                                         if (rIsBlank) {
                                           return (
                                             <span key={r["लाइन क्रमांक"]} className="bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded text-[9px] font-bold font-sans">
                                               📝 अपूर्ण ड्राफ्ट रिकॉर्ड
                                             </span>
+                                          );
+                                        }
+
+                                        if (rIsLocked) {
+                                          return (
+                                            <div key={r["लाइन क्रमांक"]} className="bg-red-50 text-red-950 border border-red-200 px-2.5 py-0.5 rounded font-mono text-[10px] font-bold flex items-center gap-1.5 shadow-sm">
+                                              <span className="text-[11px]">🔒</span>
+                                              <span className="text-red-700 font-extrabold text-[9.5px]">LOCKED (ताला बंद)</span>
+                                            </div>
                                           );
                                         }
 
