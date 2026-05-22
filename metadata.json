@@ -1,0 +1,6 @@
+{
+  "name": "Plot Census Data Manager",
+  "description": "Census data manager for plots and multi-household census numbers with Google Sheets integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
